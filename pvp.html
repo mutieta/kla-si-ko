@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="flex items-center justify-center min-h-screen bg-pink-300">
+    <div class="w-full max-w-sm h-[90vh] bg-black rounded-[40px] flex flex-col items-center justify-center p-6 shadow-xl text-white relative ">
+        
+        <h1 class="text-2xl font-bold mb-4 text-pink-400">Player Selection</h1>
+
+        <input id="player1" type="text" placeholder="Enter Player 1 Name"
+            class="w-3/4 p-3 my-2 text-center text-black bg-white rounded-xl shadow-md outline-none focus:ring-2 focus:ring-pink-400 transition">
+        <input id="player2" type="text" placeholder="Enter Player 2 Name"
+            class="w-3/4 p-3 my-2 text-center text-black bg-white rounded-xl shadow-md outline-none focus:ring-2 focus:ring-pink-400 transition">
+
+        <p id="pickingMessage" class="text-sm mt-4 font-semibold text-gray-300">Waiting for players...</p>
+
+        <div class="flex items-center justify-center gap-10 mt-6">
+            <div onclick="selectCharacter('kla')" class="cursor-pointer transform transition duration-200 hover:scale-110">
+                <img src="picture/kla.png" alt="kla" class="w-30 h-20 rounded-lg shadow-lg">
+                <p id="klaName" class="text-center mt-2 text-pink-400 font-semibold">Kla</p>
+            </div>
+            <div onclick="selectCharacter('ko')" class="cursor-pointer transform transition duration-200 hover:scale-110">
+                <img src="picture/ko.png" alt="ko" class="w-24 h-18 rounded-lg shadow-lg">
+                <p id="koName" class="text-center mt-2 text-pink-400 font-semibold">Ko</p>
+            </div>
+        </div>
+
+        <button id="nextButton" class="w-1/3 py-3 my-6 bg-pink-400 text-black rounded-full shadow-md transition-transform duration-200 hover:scale-110 hover:bg-pink-500 hidden" onclick="goToGame()">Next</button>
+
+        <footer class="absolute bottom-2 text-xs text-black">&copy; 2025 mutieta</footer>
+    </div>
+
+    <script>
+        let playerChoices = { player1: null, player2: null };
+        let currentPlayer = 1;
+
+        function selectCharacter(choice) {
+            let name1 = document.getElementById("player1").value.trim();
+            let name2 = document.getElementById("player2").value.trim();
+
+            if (!name1 || !name2) {
+                alert("Both players must enter names before picking!");
+                return;
+            }
+
+            if (currentPlayer === 1) {
+                if (playerChoices.player2 === choice) {
+                    alert("That character is already picked by Player 2!");
+                    return;
+                }
+                playerChoices.player1 = choice;
+                document.getElementById(choice + 'Name').textContent = name1;
+                document.getElementById("pickingMessage").innerText = `${name2} is picking...`;
+                currentPlayer = 2;
+            } else {
+                if (playerChoices.player1 === choice) {
+                    alert("That character is already picked by Player 1!");
+                    return;
+                }
+                playerChoices.player2 = choice;
+                document.getElementById(choice + 'Name').textContent = name2;
+                document.getElementById("pickingMessage").innerText = "Ready to play!";
+                document.getElementById("nextButton").classList.remove("hidden");
+            }
+        }
+
+        function goToGame() {
+            let name1 = document.getElementById("player1").value.trim();
+            let name2 = document.getElementById("player2").value.trim();
+
+            if (!playerChoices.player1 || !playerChoices.player2) {
+                alert("Both players must pick a character!");
+                return;
+            }
+
+            localStorage.setItem("player1Name", name1);
+            localStorage.setItem("player1Choice", playerChoices.player1);
+            localStorage.setItem("player2Name", name2);
+            localStorage.setItem("player2Choice", playerChoices.player2);
+
+            window.location.href = "game.html";
+        }
+    </script>
+</body>
+</html>

@@ -13,8 +13,8 @@
         <h2 class="text-4xl font-bold text-brown-800 mt-1">ខ្លាស៊ីគោ</h2>
         
         <!-- Clickable Yellow Button (Leads to Next Page) -->
-        <button onclick="goToNextPage()" class="w-48 h-48 bg-yellow-100 rounded-full mx-auto flex items-center justify-center mt-5 shadow-lg hover:bg-yellow-200 transition">
-            <img src="picture/klasiko.gif" alt="Kla Si Ko" class="w-40 h-30 rounded-full">
+        <button onclick="goToNextPage()" class="w-48 h-48 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mt-5 shadow-lg hover:bg-yellow-200 hover:scale-110 transition-transform duration-200">
+            <img src="picture/klasiko.gif" alt="Kla Si Ko" class="w-40 h-40 object-contain">
         </button>
 
         <!-- Description -->
@@ -28,4 +28,9 @@
     </div>
 
 </body>
+<script>
+    function goToNextPage() {
+        window.location.href = "menu.html"; // Change this to your actual next page
+    }
+</script>
 </html>
