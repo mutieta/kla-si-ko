@@ -7,12 +7,13 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("player2Name").textContent = player2Name;
 
     let currentPlayer = "ko_place"; // Start with Ko placement
-    let klaPositions = [0, 3, 12, 15];
+    let klaPositions = [0, 3, 12, 15]; // 4 tigers at corners
+    let koPositions = [];
     let koCount = 0;
     let gameState = Array(16).fill(null);
     let selectedKla = null;
     let selectedKo = null;
-    let gamePhase = 1; // 1: Ko placement, Kla move; 2: Ko and Kla movement
+    let gamePhase = 1; // 1: Ko placement, Kla move; 2: Both move
 
     function createBoard() {
         board.innerHTML = "";
@@ -24,6 +25,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 cell.classList.add("kla");
                 cell.innerHTML = '<img src="picture/kla.png" alt="kla">';
                 gameState[i] = "kla";
+            } else if (koPositions.includes(i)) {
+                cell.classList.add("ko");
+                cell.innerHTML = '<img src="picture/ko.png" alt="ko">';
+                gameState[i] = "ko";
             }
             cell.addEventListener("click", handleMove);
             board.appendChild(cell);
@@ -31,97 +36,161 @@ document.addEventListener("DOMContentLoaded", () => {
         updateTurnMessage();
     }
 
-    function handleMove(event) {
-        let index = parseInt(event.target.dataset.index);
-
-        if (gamePhase === 1) { // Ko placement, Kla move only
-            if (currentPlayer === "ko_place" && koCount < 12 && !gameState[index]) {
-                event.target.classList.add("ko");
-                event.target.innerHTML = '<img src="picture/ko.png" alt="ko">';
-                gameState[index] = "ko";
-                koCount++;
-
-                if (koCount === 12) {
-                    gamePhase = 2; // Switch to movement phase
-                    currentPlayer = "kla";
-                    updateTurnMessage();
-                    return;
-                }
-
-                currentPlayer = "kla";
-            } else if (currentPlayer === "kla" && gameState[index] === "kla") {
-                selectKla(index);
-            } else if (selectedKla !== null) {
-                moveKla(selectedKla, index);
-                selectedKla = null;
-                currentPlayer = "ko_place";
-            }
-        } else if (gamePhase === 2) { // Ko and Kla movement
-            if (currentPlayer === "kla" && gameState[index] === "kla") {
-                selectKla(index);
-            } else if (selectedKla !== null) {
-                moveKla(selectedKla, index);
-                selectedKla = null;
-                currentPlayer = "ko_move";
-            } else if (currentPlayer === "ko_move" && gameState[index] === "ko") {
-                selectKo(index);
-            } else if (selectedKo !== null) {
-                moveKo(selectedKo, index);
-                selectedKo = null;
-                currentPlayer = "kla";
-            }
-        }
-        updateTurnMessage();
-        checkWinConditions();
-    }
-
-    // ... (selectKla, selectKo, getValidMoves, moveKla, moveKo remain the same)
-
-    function getValidMoves(index) {
-        let validMoves = [index - 1, index + 1, index - 4, index + 4].filter(pos =>
-            pos >= 0 && pos < 16 && !gameState[pos]
-        );
-        let jumpMoves = [
-            { from: index, over: index - 1, to: index - 2 },
-            { from: index, over: index + 1, to: index + 2 },
-            { from: index, over: index - 4, to: index - 8 },
-            { from: index, over: index + 4, to: index + 8 }
-        ].filter(move =>
-            gameState[move.over] === "ko" && !gameState[move.to] &&
-            move.to >= 0 && move.to < 16 && move.over >= 0 && move.over < 16 &&
-            (Math.abs(move.from - move.over) === 1 || Math.abs(move.from - move.over) === 4)
-        );
-        jumpMoves.forEach(move => validMoves.push(move.to));
-        return validMoves;
-    }
-
     function updateTurnMessage() {
         if (gamePhase === 1) {
             if (currentPlayer === "ko_place") {
-                message.textContent = player2Name + " place Ko piece.";
+                message.textContent = `${player1Name} (Ko): Place a Ko. (${12 - koCount} remaining)`;
             } else {
-                message.textContent = player1Name + "'s turn (Tigers move only).";
+                message.textContent = `${player2Name} (Kla): Move a Kla.`;
             }
         } else {
-            message.textContent = (currentPlayer === "kla" ? player1Name : player2Name) + "'s turn.";
+            if (currentPlayer === "ko") {
+                message.textContent = `${player1Name} (Ko): Move a Ko.`;
+            } else {
+                message.textContent = `${player2Name} (Kla): Move a Kla.`;
+            }
         }
     }
 
-    function checkWinConditions() {
-        let koCountOnBoard = gameState.filter(piece => piece === "ko").length;
-        if (koCountOnBoard === 0) {
-            message.textContent = player1Name + " (Tigers) win!";
-            return;
+    function handleMove(event) {
+        const cell = event.target.closest(".cell");
+        const index = parseInt(cell.dataset.index);
+
+        if (gamePhase === 1) {
+            if (currentPlayer === "ko_place") {
+                // Phase 1: Ko placement
+                if (gameState[index] === null && koCount < 12) {
+                    koPositions.push(index);
+                    koCount++;
+                    gameState[index] = "ko";
+                    currentPlayer = "kla_move";
+                    createBoard();
+                }
+            } else { // Kla move during placement phase
+                if (cell.classList.contains("kla")) {
+                    selectedKla = (selectedKla === index) ? null : index;
+                } else if (selectedKla !== null && gameState[index] === null) {
+                    if (isValidKlaMove(selectedKla, index, false)) {
+                        // Move Kla
+                        gameState[selectedKla] = null;
+                        gameState[index] = "kla";
+                        klaPositions[klaPositions.indexOf(selectedKla)] = index;
+                        selectedKla = null;
+                        currentPlayer = "ko_place";
+                        if (koCount === 12) {
+                            gamePhase = 2;
+                            currentPlayer = "ko";
+                        }
+                        createBoard();
+                    }
+                }
+            }
+        } else { // Phase 2: Movement
+            if (currentPlayer === "ko") {
+                // Ko movement
+                if (cell.classList.contains("ko")) {
+                    selectedKo = (selectedKo === index) ? null : index;
+                } else if (selectedKo !== null && gameState[index] === null) {
+                    if (isValidKoMove(selectedKo, index)) {
+                        gameState[selectedKo] = null;
+                        gameState[index] = "ko";
+                        koPositions[koPositions.indexOf(selectedKo)] = index;
+                        selectedKo = null;
+                        currentPlayer = "kla";
+                        createBoard();
+                        checkWinConditions();
+                    }
+                }
+            } else { // Kla movement
+                if (cell.classList.contains("kla")) {
+                    selectedKla = (selectedKla === index) ? null : index;
+                } else if (selectedKla !== null && gameState[index] === null) {
+                    if (isValidKlaMove(selectedKla, index, true)) {
+                        const fromRow = Math.floor(selectedKla / 4);
+                        const fromCol = selectedKla % 4;
+                        const toRow = Math.floor(index / 4);
+                        const toCol = index % 4;
+                        const rowDiff = Math.abs(fromRow - toRow);
+                        const colDiff = Math.abs(fromCol - toCol);
+
+                        // Check for capture
+                        if (rowDiff === 2 || colDiff === 2) {
+                            const midRow = (fromRow + toRow) / 2;
+                            const midCol = (fromCol + toCol) / 2;
+                            const midIndex = midRow * 4 + midCol;
+                            if (gameState[midIndex] === "ko") {
+                                gameState[midIndex] = null;
+                                koPositions = koPositions.filter(pos => pos !== midIndex);
+                                koCount--;
+                            }
+                        }
+
+                        // Move Kla
+                        gameState[selectedKla] = null;
+                        gameState[index] = "kla";
+                        klaPositions[klaPositions.indexOf(selectedKla)] = index;
+                        selectedKla = null;
+                        currentPlayer = "ko";
+                        createBoard();
+                        checkWinConditions();
+                    }
+                }
+            }
+        }
+    }
+
+    function isValidKoMove(from, to) {
+        const fromRow = Math.floor(from / 4);
+        const fromCol = from % 4;
+        const toRow = Math.floor(to / 4);
+        const toCol = to % 4;
+        const rowDiff = Math.abs(fromRow - toRow);
+        const colDiff = Math.abs(fromCol - toCol);
+        return ((rowDiff === 1 && colDiff === 0) || (rowDiff === 0 && colDiff === 1)) && gameState[to] === null;
+    }
+
+    function isValidKlaMove(from, to, isPhase2) {
+        const fromRow = Math.floor(from / 4);
+        const fromCol = from % 4;
+        const toRow = Math.floor(to / 4);
+        const toCol = to % 4;
+        const rowDiff = Math.abs(fromRow - toRow);
+        const colDiff = Math.abs(fromCol - toCol);
+
+        // Slide move (any direction)
+        if (rowDiff <= 1 && colDiff <= 1) {
+            return gameState[to] === null;
         }
 
-        let klaMovable = klaPositions.some(klaPos => {
-            return getValidMoves(klaPos).length > 0;
+        // Jump capture (Phase 2 only)
+        if (isPhase2) {
+            if ((rowDiff === 2 && colDiff === 0) || (rowDiff === 0 && colDiff === 2) || (rowDiff === 2 && colDiff === 2)) {
+                const midRow = (fromRow + toRow) / 2;
+                const midCol = (fromCol + toCol) / 2;
+                const midIndex = midRow * 4 + midCol;
+                return gameState[midIndex] === "ko" && gameState[to] === null;
+            }
+        }
+
+        return false;
+    }
+
+    function checkWinConditions() {
+        // Check if all Klas are blocked
+        const allKlasBlocked = klaPositions.every(klaPos => {
+            for (let i = 0; i < 16; i++) {
+                if (isValidKlaMove(klaPos, i, gamePhase === 2)) return false;
+            }
+            return true;
         });
 
-        if (!klaMovable) {
-            message.textContent = player2Name + " (Cows) win!";
+        if (koCount === 0) {
+            message.textContent = `${player2Name} (Kla) wins! All Ko captured.`;
+        } else if (allKlasBlocked) {
+            message.textContent = `${player1Name} (Ko) wins! Kla are blocked.`;
+        } else {
+            updateTurnMessage();
         }
-
     }
 
     createBoard();
