@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", () => {
+  document.addEventListener("DOMContentLoaded", () => {
     const board = document.getElementById("gameBoard");
     const message = document.getElementById("gameMessage");
     const player1Name = localStorage.getItem("player1Name") || "Player 1";
@@ -185,9 +185,9 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         if (koCount === 0) {
-            message.textContent = `${player2Name} (Kla) wins! All Ko captured.`;
+            message.textContent = `${player2Name} wins! All Ko captured.`;
         } else if (allKlasBlocked) {
-            message.textContent = `${player1Name} (Ko) wins! Kla are blocked.`;
+            message.textContent = `${player1Name} wins! Kla are blocked.`;
         } else {
             updateTurnMessage();
         }
